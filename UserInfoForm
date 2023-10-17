@@ -1,0 +1,188 @@
+class UserInfo:
+    def __init__(self, file_path="userInfoForm.txt"):
+        self.file_path = file_path
+        self.main_userInfo = self.load_data()
+
+    def load_data(self):
+        userInfoForm = {}
+        try:
+            with open(self.file_path, 'r') as file:
+                for line in file:
+                    user_info = line.strip().split(',')
+                   
+                    if len(user_info) == 4:
+                        user_id = int(user_info[0])
+                        user_data = {
+                            "user_name": user_info[1],
+                            "r_passcode": int(user_info[2]),
+                            "amount": int(user_info[3])
+                        }
+                        userInfoForm[user_id] = user_data
+                        
+        except FileNotFoundError:
+            return userInfoForm
+        return userInfoForm
+
+    def save_data(self):
+        with open(self.file_path, 'w') as file:
+            for user_id, user_data in self.main_userInfo.items():
+                userInfoForm_line = f"{user_id},{user_data['user_name']},{user_data['r_passcode']},{user_data['amount']}"
+                file.write(userInfoForm_line + '\n')
+    
+
+    def firstOption(self):
+        userInfoForm = self.load_data()
+        #print(userInfoForm)
+        option:int = int(input("Press 1 to Login:\nPress 2 to Register:"))
+        if(option==1):
+            self.login()
+        else:
+            self.register()
+            
+            
+    def Update(self, loginID, update_input, value_to_update):
+        if update_input == 4:
+            self.main_userInfo[loginID]["user_name"] = value_to_update
+        elif update_input == 5:
+            self.main_userInfo[loginID]["r_passcode"] = value_to_update
+        else:
+            self.main_userInfo[loginID]["amount"] = value_to_update  
+        return True
+       
+            
+    def withdraw(self,loginID,withdraw_input):
+        self.main_userInfo[loginID]["amount"] -= withdraw_input
+        return True
+ 
+ 
+    def returnID(self,transfer_username):
+        userInfo_length:int=len(self.main_userInfo)
+        for i in range(1,userInfo_length+1):
+            if self.main_userInfo[i]["user_name"]==transfer_username:
+                return i
+        return None
+ 
+
+    def menu(self, loginID):
+        amount = self.main_userInfo[loginID]["amount"]
+        menu_input = int(input("Press 1 to Transfer:\nPress 2 to Withdraw:\nPress 3 to Update:"))
+    
+        if menu_input == 1:
+            transfer_username = input("Please Enter User Name to Transfer:")
+            transfer_id = self.returnID(transfer_username)
+            print("\n\nWe get to Transfer id:",transfer_id)
+            print("myID",loginID)
+        
+            if transfer_id is not None:
+                t_amount = int(input("Enter amount to Transfer {0}: ".format(self.main_userInfo[transfer_id]["user_name"])))
+                if t_amount <= self.main_userInfo[loginID].get("amount", 0):
+                    self.main_userInfo[loginID]["amount"] -= t_amount
+                    self.main_userInfo[transfer_id]["amount"] += t_amount
+                    print("\nTransfer successful!\n")
+                    current_amount=self.main_userInfo[loginID].get("amount",0)
+                    print("Your current balance is:",current_amount)
+                else:
+                    print("Insufficient balance for transfer.")
+            else:
+                print("User not found.") 
+                self.save_data()
+                
+        if menu_input==2:
+            withdraw_input = int(input("\nPlease enter amount to withdraw:"))
+            if withdraw_input> self.main_userInfo[loginID].get("amount",0):
+                print("Not sufficient amount to withdraw!")
+            else:
+                pass
+            self.withdraw(loginID,withdraw_input)
+            balance:int= int(amount-withdraw_input)
+            print("You left :>",balance)
+            print(self.main_userInfo[loginID])
+            self.save_data()
+
+        if menu_input==3:
+            update_input = int(input("\n\nPress 4 to Update User Name:\nPress 5 to Update User Passcode:\nPress 6 to Update Amount:"))
+            
+            if update_input==4:
+                update_username:str=input("\n\nPlease Enter New User Name to update:")
+                print("New User Name is:",update_username)
+                self.Update(loginID,update_input,update_username)
+                print(self.main_userInfo[loginID])
+                self.save_data() 
+                
+            if update_input==5:
+                update_passcode1:int=input("\n\nPlease Enter New passcode to update:")
+                update_passcode2:int=input("\n\nPlease Enter Again New passcode to comfirm:")
+                update_passcode:int=int(update_passcode1 and update_passcode2)
+                if (update_passcode1==update_passcode2):
+                    print("New User passcode is:",update_passcode)
+                self.Update(loginID,update_input,update_passcode)
+                print(self.main_userInfo[loginID])
+                self.save_data() 
+                
+            if update_input==6:
+                add_amount:int=int(input("\n\nPlease Enter amount to add:"))
+                update_amount = add_amount + self.main_userInfo[loginID]["amount"]
+                print("Updated Balance is:",update_amount)
+                self.Update(loginID,update_input,update_amount)
+                print(self.main_userInfo[loginID])
+                self.save_data() 
+                
+            
+    def login(self):
+        print("\n________This is from login.__________\n")
+        l_username:str = input("Please Enter UserName to Login:")
+        l_passcode:int = int(input("Please Enter Passcode to Login:"))
+        exitUser = self.exitUser(l_username,l_passcode)
+        
+        if(exitUser):
+            print("\n\n\n_____LoginSuccessful_____\n\n")
+            loginID:int=self.returnID(l_username)
+            print(self.main_userInfo[loginID])
+            self.menu(loginID)
+                      
+        else:
+            print("You cannot login")
+            
+            
+    def exitUser(self,l_username,l_passcode):
+        user_count=len(self.main_userInfo)
+        for i in range(1,user_count+1):#start stop step
+            if self.main_userInfo[i]["user_name"]==l_username and self.main_userInfo[i]["r_passcode"]==l_passcode:
+                return True
+        return False
+           
+    
+    def register(self):
+        print("\n________This is from register.________\n")
+        r_username:str = input("Please Enter UserName to Register:")
+        r_amount:int=int(input("Enter Amount:"))
+        r_passcode1:int = int(input("Please Enter Passcode to Register:"))
+        r_passcode2:int = int(input("Please Enter Again Passcode to Comfirm:"))
+
+        for user_id, user_data in self.main_userInfo.items():
+            if user_data["user_name"] == str(r_username):
+                print("Username already exists. Please choose another name to register.")
+                return 
+
+        if r_passcode1 == r_passcode2:
+            id = self.checkingUserCount()
+            user_data = {"user_name": r_username, "r_passcode": r_passcode2, "amount": r_amount}
+            self.main_userInfo[id] = user_data 
+            self.save_data()  
+            print("\n#####Successful Registering!#####\n")
+            print(self.main_userInfo)
+           
+        else:
+            print("Passcodes are different, Failed Registering.")
+            print("Registration failed.")
+       
+    def checkingUserCount(self):
+        count = len(self.main_userInfo)
+        return count+1        
+     
+          
+if __name__=="__main__":
+    userInfo  = UserInfo("userInfoForm.txt")
+    while True:
+        userInfo.firstOption()
+    
